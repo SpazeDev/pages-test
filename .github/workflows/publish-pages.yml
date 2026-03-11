@@ -34,7 +34,7 @@ jobs:
           workloads: wasm-tools
 
       - name: Publish app
-        run: dotnet publish src/PagesTest.Host -c Release -o output
+        run: dotnet publish src/PagesTest.Host -c Release -o output /P:BlazorEnableCompression=false
         
       - name: copy index.html to 404.html
         run: cp output/wwwroot/index.html output/wwwroot/404.html
