@@ -34,7 +34,7 @@ jobs:
           workloads: wasm-tools
 
       - name: Publish app
-        run: dotnet publish src/PagesTest.Host -c Release -o /output
+        run: dotnet publish src/PagesTest.Host -c Release -o output
 
 #      - name: Rewrite base href
 #        uses: SteveSandersonMS/ghaction-rewrite-base-href@5b54862a8831e012d4f1a8b2660894415fdde8ec # v1.1.0
@@ -48,7 +48,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: /output/wwwroot
+          path: output/wwwroot
 
       - name: Deploy to GitHub Pages
         id: deployment
