@@ -1,0 +1,70 @@
+﻿@page "/localhelpersse"
+@implements IAsyncDisposable
+@using System.Net.Mime
+@using System.Net.ServerSentEvents
+@using System.Threading
+@inject HttpClient Http
+
+<PageTitle>LocalHelper - SSE</PageTitle>
+
+<h1>Local-Helper - SSE</h1>
+
+<p>Test getting SSE stream from local helper.</p>
+
+@if (this.Events == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in this.Events)
+            {
+                <tr>
+                    <td @key="e">@e.Data</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private readonly CancellationTokenSource cts = new CancellationTokenSource();
+
+    private List<Event> Events { get; } = new List<Event>();
+
+    private class Event
+    {
+        public string Data { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:5000/sse");
+        request.SetBrowserResponseStreamingEnabled(true);
+        request.Headers.Accept.ParseAdd(MediaTypeNames.Text.EventStream);
+
+        var response = await Http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, this.cts.Token);
+        var responseStream = await response.Content.ReadAsStreamAsync(this.cts.Token);
+
+        _ = Task.Run(async () =>
+        {
+            await foreach (var item in SseParser.Create(responseStream).EnumerateAsync(this.cts.Token))
+            {
+                this.Events.Add(new Event() { Data = item.Data });
+                this.StateHasChanged();
+            }
+        }, this.cts.Token);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await this.cts.CancelAsync();
+    }
+}

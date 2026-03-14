@@ -1,11 +1,11 @@
-﻿@page "/weather"
+﻿@page "/localhelperhttp"
 @inject HttpClient Http
 
-<PageTitle>Weather</PageTitle>
+<PageTitle>LocalHelper - Http</PageTitle>
 
-<h1>Weather</h1>
+<h1>Local-Helper - Http</h1>
 
-<p>This component demonstrates fetching data from the server.</p>
+<p>Test getting http response from local helper.</p>
 
 @if (forecasts == null)
 {
@@ -41,7 +41,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("http://localhost:5000/test");
     }
 
     public class WeatherForecast
