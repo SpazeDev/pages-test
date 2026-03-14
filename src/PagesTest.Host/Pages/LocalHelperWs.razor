@@ -1,0 +1,74 @@
+﻿@page "/localhelperws"
+@implements IAsyncDisposable
+@using System.Net.Mime
+@using System.Net.ServerSentEvents
+@using System.Threading
+@using System.Net.WebSockets
+@using System.Text
+@inject HttpClient Http
+
+<PageTitle>LocalHelper - WS</PageTitle>
+
+<h1>Local-Helper - WS</h1>
+
+<p>Test getting WS stream from local helper.</p>
+
+@if (this.Events == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var e in this.Events)
+            {
+                <tr>
+                    <td @key="e">@e.Data</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private readonly CancellationTokenSource cts = new CancellationTokenSource();
+    private readonly ClientWebSocket webSocket = new ClientWebSocket();
+
+    private List<Event> Events { get; } = new List<Event>();
+
+    private class Event
+    {
+        public string Data { get; set; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await this.webSocket.ConnectAsync(new Uri("ws://localhost:5000/ws"), this.cts.Token);
+
+        _ = Task.Run(async () =>
+        {
+            while (!this.cts.Token.IsCancellationRequested)
+            {
+                var buffer = new byte[1024];
+                var result = await this.webSocket.ReceiveAsync(buffer, this.cts.Token);
+                var resultMsg = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                this.Events.Add(new Event() { Data = resultMsg });
+
+                this.StateHasChanged();
+            }
+        }, this.cts.Token);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await this.cts.CancelAsync();
+
+        this.webSocket.Dispose();
+    }
+}

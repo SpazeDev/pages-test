@@ -1,3 +1,6 @@
+using System.Net.WebSockets;
+using System.Text;
+
 namespace PagesTest.LocalHelper;
 
 public class Program
@@ -14,6 +17,7 @@ public class Program
             x.AllowAnyMethod();
             x.AllowAnyOrigin();
         });
+        app.UseWebSockets();
 
         var summaries = new[]
         {
@@ -45,6 +49,24 @@ public class Program
             }
 
             return TypedResults.ServerSentEvents(GetData());
+        });
+
+        app.MapGet("/ws", async (HttpContext conntext, CancellationToken ct) =>
+        {
+            if (!conntext.WebSockets.IsWebSocketRequest)
+            {
+                throw new BadHttpRequestException("Not a WebSocket request");
+            }
+
+            var ws = await conntext.WebSockets.AcceptWebSocketAsync();
+            while (!ct.IsCancellationRequested)
+            {
+                while (!ct.IsCancellationRequested)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(1), ct);
+                    await ws.SendAsync(Encoding.UTF8.GetBytes(Random.Shared.Next(0, 100).ToString()), WebSocketMessageType.Text, true, ct);
+                }
+            }
         });
 
         app.Run();
